@@ -141,7 +141,7 @@
       autocomplete="off"
     >
 
-    <button type="button" onclick="simularFinalizacao()">
+    <button type="button" onclick="finalizarAtendimento()">
       FINALIZAR ATENDIMENTO
     </button>
 
@@ -157,18 +157,56 @@
   </div>
 
   <script>
-    function simularFinalizacao() {
-      const telefone = document.getElementById("telefone").value.trim();
-      const resultado = document.getElementById("resultado");
+  async function finalizarAtendimento() {
+    const telefone = document.getElementById("telefone").value.trim();
+    const resultado = document.getElementById("resultado");
+    const botao = document.querySelector("button");
 
-      if (!telefone) {
-        alert("Informe o telefone do cliente.");
-        return;
-      }
+    if (!telefone) {
+      alert("Informe o telefone do cliente.");
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = "FINALIZANDO...";
+
+    try {
+      const resposta = await fetch(
+        "https://pillon-finalizar-atendimento.pillonanajulia.workers.dev",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            telefone: telefone
+          })
+        }
+      );
+
+      const dados = await resposta.json();
 
       resultado.style.display = "block";
-    }
-  </script>
 
-</body>
-</html>
+      if (resposta.ok && dados.ok) {
+        resultado.style.background = "#eef7ee";
+        resultado.textContent = "✓ Atendimento finalizado com sucesso.";
+
+        document.getElementById("telefone").value = "";
+      } else {
+        resultado.style.background = "#fdeeee";
+        resultado.textContent =
+          dados.mensagem || "Não foi possível finalizar o atendimento.";
+      }
+
+    } catch (erro) {
+      resultado.style.display = "block";
+      resultado.style.background = "#fdeeee";
+      resultado.textContent =
+        "Erro de conexão. Tente novamente.";
+    }
+
+    botao.disabled = false;
+    botao.textContent = "FINALIZAR ATENDIMENTO";
+  }
+</script>
