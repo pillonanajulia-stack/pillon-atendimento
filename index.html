@@ -86,7 +86,6 @@
       height: 52px;
       border: 0;
       border-radius: 8px;
-      background: #1d1d1f;
       color: white;
       font-size: 14px;
       font-weight: bold;
@@ -95,6 +94,20 @@
 
     button:hover {
       opacity: .9;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .iniciar {
+      background: #1d1d1f;
+      margin-bottom: 10px;
+    }
+
+    .finalizar {
+      background: #555;
     }
 
     .aviso {
@@ -112,7 +125,6 @@
       margin-top: 18px;
       padding: 14px;
       border-radius: 8px;
-      background: #eef7ee;
       font-size: 14px;
       line-height: 1.5;
     }
@@ -126,10 +138,10 @@
     <div class="marca">PILLON</div>
     <div class="subtitulo">PAINEL ADMINISTRATIVO</div>
 
-    <h1>Finalizar atendimento</h1>
+    <h1>Controle de atendimento</h1>
 
     <div class="descricao">
-      Informe o telefone do cliente para encerrar o atendimento atual.
+      Informe o telefone do cliente e escolha a ação desejada.
     </div>
 
     <label for="telefone">Telefone do cliente</label>
@@ -141,72 +153,111 @@
       autocomplete="off"
     >
 
-    <button type="button" onclick="finalizarAtendimento()">
+    <button
+      type="button"
+      class="iniciar"
+      onclick="executarAtendimento('iniciar')"
+    >
+      INICIAR ATENDIMENTO
+    </button>
+
+    <button
+      type="button"
+      class="finalizar"
+      onclick="executarAtendimento('finalizar')"
+    >
       FINALIZAR ATENDIMENTO
     </button>
 
-    <div id="resultado">
-      Página de teste funcionando corretamente.
-    </div>
+    <div id="resultado"></div>
 
     <div class="aviso">
-      Após a finalização, na próxima mensagem o cliente será tratado
-      como um novo atendimento e receberá o menu inicial.
+      <strong>INICIAR:</strong> use antes de a PILLON entrar em contato
+      com o cliente. Assim, quando ele responder, não receberá o menu
+      automático.
+      <br><br>
+      <strong>FINALIZAR:</strong> encerra o atendimento. Na próxima
+      mensagem, o cliente será tratado como um novo atendimento e
+      receberá o menu inicial.
     </div>
 
   </div>
 
   <script>
-  async function finalizarAtendimento() {
-    const telefone = document.getElementById("telefone").value.trim();
-    const resultado = document.getElementById("resultado");
-    const botao = document.querySelector("button");
+    async function executarAtendimento(acao) {
 
-    if (!telefone) {
-      alert("Informe o telefone do cliente.");
-      return;
-    }
+      const telefone =
+        document.getElementById("telefone").value.trim();
 
-    botao.disabled = true;
-    botao.textContent = "FINALIZANDO...";
+      const resultado =
+        document.getElementById("resultado");
 
-    try {
-      const resposta = await fetch(
-        "https://pillon-finalizar-atendimento.pillonanajulia.workers.dev",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            telefone: telefone
-          })
-        }
-      );
+      const botoes =
+        document.querySelectorAll("button");
 
-      const dados = await resposta.json();
-
-      resultado.style.display = "block";
-
-      if (resposta.ok && dados.ok) {
-        resultado.style.background = "#eef7ee";
-        resultado.textContent = "✓ Atendimento finalizado com sucesso.";
-
-        document.getElementById("telefone").value = "";
-      } else {
-        resultado.style.background = "#fdeeee";
-        resultado.textContent =
-          dados.mensagem || "Não foi possível finalizar o atendimento.";
+      if (!telefone) {
+        alert("Informe o telefone do cliente.");
+        return;
       }
 
-    } catch (erro) {
-      resultado.style.display = "block";
-      resultado.style.background = "#fdeeee";
-      resultado.textContent =
-        "Erro de conexão. Tente novamente.";
-    }
+      botoes.forEach(botao => botao.disabled = true);
 
-    botao.disabled = false;
-    botao.textContent = "FINALIZAR ATENDIMENTO";
-  }
-</script>
+      resultado.style.display = "block";
+      resultado.style.background = "#f6f6f6";
+      resultado.textContent =
+        acao === "iniciar"
+          ? "Iniciando atendimento..."
+          : "Finalizando atendimento...";
+
+      try {
+
+        const resposta = await fetch(
+          "https://pillon-finalizar-atendimento.pillonanajulia.workers.dev",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              telefone: telefone,
+              acao: acao
+            })
+          }
+        );
+
+        const dados = await resposta.json();
+
+        if (resposta.ok && dados.ok) {
+
+          resultado.style.background = "#eef7ee";
+
+          resultado.textContent =
+            acao === "iniciar"
+              ? "✓ Atendimento iniciado com sucesso."
+              : "✓ Atendimento finalizado com sucesso.";
+
+          document.getElementById("telefone").value = "";
+
+        } else {
+
+          resultado.style.background = "#fdeeee";
+
+          resultado.textContent =
+            dados.mensagem ||
+            "Não foi possível executar a operação.";
+        }
+
+      } catch (erro) {
+
+        resultado.style.background = "#fdeeee";
+
+        resultado.textContent =
+          "Erro de conexão. Tente novamente.";
+      }
+
+      botoes.forEach(botao => botao.disabled = false);
+    }
+  </script>
+
+</body>
+</html>
